@@ -81,6 +81,7 @@ WHISPER_LANG = os.getenv("WHISPER_LANG", "th")
 OPERATION_MODE = os.getenv("OPERATION_MODE", "audio_bridge")
 BRIDGE_OUTPUT_DEVICE = os.getenv("BRIDGE_OUTPUT_DEVICE", "teams") # "teams", "speakers", or device name
 BRIDGE_MONITOR_SPEAKERS = os.getenv("BRIDGE_MONITOR_SPEAKERS", "false").lower() in ("true", "1", "yes")
+EARPIECE_GAIN = float(os.getenv("EARPIECE_GAIN", "3.0")) # 3x digital volume boost to telephone earpiece
 
 # Dictation & macOS integration
 DICTATE_TO_MACOS = os.getenv("DICTATE_TO_MACOS", "true").lower() in ("true", "1", "yes")

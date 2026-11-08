@@ -19,6 +19,7 @@ def convert_to_mulaw(input_file: str) -> bytes:
     subprocess.run([
         FFMPEG_BIN, "-y",
         "-i", input_file,
+        "-filter:a", "volume=3.0",
         "-ar", "8000", "-ac", "1",
         "-f", "mulaw",
         raw_path

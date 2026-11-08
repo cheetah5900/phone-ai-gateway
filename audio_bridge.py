@@ -3,6 +3,7 @@ import time
 import threading
 from typing import Optional, Callable
 import sounddevice as sd
+from config import EARPIECE_GAIN
 
 # Precompute 8-bit mu-law to 16-bit linear PCM lookup table
 MULAW_TO_PCM = array.array("h", [0] * 256)
@@ -161,14 +162,19 @@ class AudioBridge:
                     continue
                 samples = array.array("h")
                 samples.frombytes(data)
-                # 960 stereo frames -> 160 8kHz mono mu-law bytes
+                # 960 stereo frames -> 160 8kHz mono mu-law bytes with 3x gain
                 out = bytearray()
+                gain = EARPIECE_GAIN
                 for frame_idx in range(0, 960, 6):
                     total = 0
                     for sub in range(6):
                         idx = (frame_idx + sub) * 2
                         total += (samples[idx] + samples[idx + 1]) // 2
-                    mono_avg = total // 6
+                    mono_avg = int((total // 6) * gain)
+                    if mono_avg > 32767:
+                        mono_avg = 32767
+                    elif mono_avg < -32768:
+                        mono_avg = -32768
                     out.append(_pcm_to_mulaw(mono_avg))
                 if out:
                     self.send_rtp_callback(bytes(out))
