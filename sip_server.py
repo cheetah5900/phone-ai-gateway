@@ -180,7 +180,9 @@ class SIPServer:
 
             m_ip = re.search(r"c=IN IP4 ([\d\.]+)", body)
             if m_ip:
-                remote_rtp_ip = m_ip.group(1)
+                ip_cand = m_ip.group(1).strip()
+                if ip_cand and ip_cand != "0.0.0.0":
+                    remote_rtp_ip = ip_cand
 
             m_port = re.search(r"m=audio (\d+)", body)
             if m_port:
@@ -233,6 +235,12 @@ class SIPServer:
                 f"{sdp}"
             )
             self.sock.sendto(resp_ok.encode(), addr)
+
+            # If retransmission for an already established call, don't restart media session
+            if self.is_in_call and self.active_call_id == call_id:
+                print(f"[SIP] 🔁 Duplicate/retransmitted INVITE for active call. Re-sent 200 OK (media kept intact).")
+                return
+
             print("[SIP] Sent 200 OK (Call Accepted). Starting media session immediately...")
 
             # Start media immediately (Step 255 verified baseline)
@@ -286,6 +294,14 @@ class SIPServer:
 
     def _start_media(self, remote_rtp_ip: str, remote_rtp_port: int):
         """Start RTP audio session and play welcome chime."""
+        if not remote_rtp_ip or remote_rtp_ip == "0.0.0.0":
+            remote_rtp_ip = self.ata_ip
+
+        if (self.media_session and self.media_session.running and 
+            self.media_session.remote_ip == remote_rtp_ip and 
+            self.media_session.remote_port == remote_rtp_port):
+            return
+
         if self.media_session:
             self.media_session.stop()
         self.media_session = RTPMediaSession(self.mac_ip, self.rtp_port, self.on_speech_utterance)
